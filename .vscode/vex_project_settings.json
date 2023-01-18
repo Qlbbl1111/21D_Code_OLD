@@ -1,0 +1,18 @@
+{
+	"extension": {
+		"version": "0.3.0",
+		"json": 1
+	},
+	"project": {
+		"name": "21D_Code",
+		"description": "21D Code 1/18/2022 Python.",
+		"creationDate": "1/18/2023, 9:22:55 AM",
+		"platform": "V5",
+		"language": "python",
+		"slot": 1,
+		"sdkVersion": "V5_1_0_1_14",
+		"python": {
+			"main": "src/main.py"
+		}
+	}
+}
