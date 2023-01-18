@@ -1,5 +1,6 @@
 #region VEXcode Generated Robot Configuration
 from vex import *
+from auton import auton_run
 
 # Brain should be defined by default
 brain=Brain()
@@ -19,11 +20,8 @@ Intake = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
 Indexer = Motor(Ports.PORT21, GearSetting.RATIO_18_1, True)
 controller_1 = Controller(PRIMARY)
 
-
 # wait for rotation sensor to fully initialize
 wait(30, MSEC)
-
-
 
 # define variables used for controlling motors based on controller inputs
 drivetrain_l_needs_to_be_stopped_controller_1 = False
@@ -104,6 +102,7 @@ toggle = False
 latch2 = False
 toggle2 = False
 a_toggle = False
+shift = False
 
 #Set
 Intake.set_velocity(90, PERCENT)
@@ -112,21 +111,12 @@ drivetrain.set_turn_velocity(35, PERCENT)
 drivetrain.set_stopping(BRAKE)
 Indexer.set_max_torque(100, PERCENT)
 
-    #auton
+
 def autonomous():
     controller_1.screen.print("Auton Start")
-    wait(1,SECONDS)
-    Intake.set_velocity(100, PERCENT)
-    Intake.spin(REVERSE)
-    drivetrain.drive_for(FORWARD, 200, MM)
-    wait(0.5,SECONDS)
-    Intake.stop()
-    drivetrain.drive_for(REVERSE, 100, MM)
+    auton_run()
     return
 
-
-
-#drive
 def driver_control():
     controller_1.screen.clear_screen()
     controller_1.screen.print("Drive Start")
@@ -136,22 +126,31 @@ competition = Competition(driver_control, autonomous)
 
 #loop
 while True:
+    #shift
+    if controller_1.buttonR1.pressing():
+        shift = True
+    else:
+        shift = False
 
     #indexer
-    if controller_1.buttonB.pressing() or controller_1.buttonA.pressing():
-        Indexer.set_velocity(100, PERCENT)
+    if controller_1.buttonL1.pressing():
+        Indexer.set_velocity(90, PERCENT)
         Indexer.spin(FORWARD)
     else:
         Indexer.stop()
 
-    #if controller_1.buttonA.pressing() and a_toggle == False:
-    #    Indexer.set_velocity(100, PERCENT)
-    #    Indexer.spin(FORWARD)
-    #    wait(0.5,SECONDS)
-    #    Indexer.stop()
-    #    b_toggle = True
-    #else:
-    #    b_toggle = False
+    #intake
+    if controller_1.buttonL2.pressing() and shift == False:
+        Intake.set_velocity(90, PERCENT)
+        Intake.spin(FORWARD)
+    else:
+        Intake.stop()
+    #outtake
+    if controller_1.buttonL2.pressing() and shift == True:
+        Intake.set_velocity(90, PERCENT)
+        Intake.spin(REVERSE)
+    else:
+        Intake.stop()
 
     #flywheel
     if toggle and not toggle2: #fast
@@ -163,7 +162,7 @@ while True:
     else:
         Flywheel.stop()
 
-    if controller_1.buttonR2.pressing(): #slow
+    if controller_1.buttonR2.pressing() and shift == True: #slow
         if not latch:
             #flip the toggle one time and set the latch
             toggle = not toggle
@@ -172,7 +171,7 @@ while True:
         #Once the BumperA is released then then release the latch too
         latch = False
 
-    if controller_1.buttonR1.pressing(): #fast
+    if controller_1.buttonR2.pressing() and shift == False: #fast
         if not latch2:
             #flip the toggle one time and set the latch
             toggle2 = not toggle2
