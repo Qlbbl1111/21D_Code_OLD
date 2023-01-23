@@ -1,6 +1,5 @@
 #region VEXcode Generated Robot Configuration
 from vex import *
-from auton import auton_run
 
 # Brain should be defined by default
 brain=Brain()
@@ -13,6 +12,7 @@ right_motor_a = Motor(Ports.PORT17, GearSetting.RATIO_6_1, False)
 right_motor_b = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False)
 right_drive_smart = MotorGroup(right_motor_a, right_motor_b)
 drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 319.19, 295, 40, MM, 1)
+
 Flywheel_motor_a = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
 Flywheel_motor_b = Motor(Ports.PORT20, GearSetting.RATIO_6_1, True)
 Flywheel = MotorGroup(Flywheel_motor_a, Flywheel_motor_b)
@@ -20,6 +20,16 @@ Intake = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
 Indexer = Motor(Ports.PORT21, GearSetting.RATIO_18_1, True)
 controller_1 = Controller(PRIMARY)
 
+def curve(left, right):
+    t=7
+    if left <= 5 and left >= -5:
+        left = 0
+    if right <= 5 and right >= -5:
+        right = 0
+    new_left =  (math.exp(-(t/10))+math.exp((abs(left)-100)/10)*(1-math.exp(-(t/10))))*left
+    new_right = (math.exp(-(t/10))+math.exp((abs(right)-100)/10)*(1-math.exp(-(t/10))))*right
+    return(int(new_left),int(new_right))
+    
 # wait for rotation sensor to fully initialize
 wait(30, MSEC)
 
@@ -38,8 +48,9 @@ def rc_auto_loop_function_controller_1():
             # calculate the drivetrain motor velocities from the controller joystick axies
             # left = axis3
             # right = axis2
-            drivetrain_left_side_speed = controller_1.axis3.position()
-            drivetrain_right_side_speed = controller_1.axis2.position()
+            drive_input = curve(controller_1.axis3.position(), controller_1.axis2.position())
+            drivetrain_left_side_speed = drive_input[0]
+            drivetrain_right_side_speed = drive_input[1]
             
             # check if the value is inside of the deadband range
             if drivetrain_left_side_speed < 5 and drivetrain_left_side_speed > -5:
@@ -105,12 +116,21 @@ a_toggle = False
 shift = False
 
 #Set
-Intake.set_velocity(90, PERCENT)
-drivetrain.set_drive_velocity(75, PERCENT)
-drivetrain.set_turn_velocity(35, PERCENT)
+Intake.set_velocity(85, PERCENT)
+drivetrain.set_drive_velocity(100, PERCENT)
 drivetrain.set_stopping(BRAKE)
+Flywheel.set_stopping(COAST)
 Indexer.set_max_torque(100, PERCENT)
 
+def auton_run():
+    #spin roller and back away
+    Intake.set_velocity(100, PERCENT)
+    Intake.spin(REVERSE)
+    drivetrain.drive_for(FORWARD, 200, MM)
+    wait(0.5,SECONDS)
+    Intake.stop()
+    drivetrain.drive_for(REVERSE, 100, MM)
+    return
 
 def autonomous():
     controller_1.screen.print("Auton Start")
@@ -141,24 +161,22 @@ while True:
 
     #intake
     if controller_1.buttonL2.pressing() and shift == False:
-        Intake.set_velocity(90, PERCENT)
+        Intake.set_velocity(85, PERCENT)
         Intake.spin(FORWARD)
-    else:
-        Intake.stop()
     #outtake
-    if controller_1.buttonL2.pressing() and shift == True:
-        Intake.set_velocity(90, PERCENT)
+    elif controller_1.buttonL2.pressing() and shift == True:
+        Intake.set_velocity(85, PERCENT)
         Intake.spin(REVERSE)
     else:
         Intake.stop()
 
     #flywheel
-    if toggle and not toggle2: #fast
+    if toggle and not toggle2: #slow
+        Flywheel.spin(FORWARD)
+        Flywheel.set_velocity(70, PERCENT)
+    elif toggle2 and not toggle: #fast
         Flywheel.spin(FORWARD)
         Flywheel.set_velocity(100, PERCENT)
-    elif toggle2 and not toggle: #slow
-        Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(85, PERCENT)
     else:
         Flywheel.stop()
 
