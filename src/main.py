@@ -4,7 +4,7 @@ from vex import *
 # Brain should be defined by default
 brain=Brain()
 
-# Robot configuration code
+# Robot port configuration code
 left_motor_a = Motor(Ports.PORT11, GearSetting.RATIO_6_1, True)
 left_motor_b = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True)
 left_drive_smart = MotorGroup(left_motor_a, left_motor_b)
@@ -21,11 +21,14 @@ Indexer = Motor(Ports.PORT21, GearSetting.RATIO_18_1, True)
 controller_1 = Controller(PRIMARY)
 
 def curve(left, right):
+    #ajustment factors
     t=7
+    #dead zone set to zero
     if left <= 5 and left >= -5:
         left = 0
     if right <= 5 and right >= -5:
         right = 0
+    #curve to graph: https://www.desmos.com/calculator/roc1otanrb
     new_left =  (math.exp(-(t/10))+math.exp((abs(left)-100)/10)*(1-math.exp(-(t/10))))*left
     new_right = (math.exp(-(t/10))+math.exp((abs(right)-100)/10)*(1-math.exp(-(t/10))))*right
     return(int(new_left),int(new_right))
@@ -146,6 +149,7 @@ competition = Competition(driver_control, autonomous)
 
 #loop
 while True:
+    
     #shift
     if controller_1.buttonR1.pressing():
         shift = True
