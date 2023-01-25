@@ -17,7 +17,7 @@ Flywheel_motor_a = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
 Flywheel_motor_b = Motor(Ports.PORT20, GearSetting.RATIO_6_1, True)
 Flywheel = MotorGroup(Flywheel_motor_a, Flywheel_motor_b)
 Intake = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
-Indexer = Motor(Ports.PORT21, GearSetting.RATIO_18_1, True)
+Indexer = Motor(Ports.PORT21, GearSetting.RATIO_6_1, True)
 controller_1 = Controller(PRIMARY)
 
 def curve(left, right):
@@ -124,6 +124,7 @@ drivetrain.set_drive_velocity(100, PERCENT)
 drivetrain.set_stopping(BRAKE)
 Flywheel.set_stopping(COAST)
 Indexer.set_max_torque(100, PERCENT)
+Indexer.set_position(0, DEGREES)
 
 def auton_run():
     #spin roller and back away
@@ -157,8 +158,13 @@ while True:
         shift = False
 
     #indexer
-    if controller_1.buttonL1.pressing():
-        Indexer.set_velocity(90, PERCENT)
+    if controller_1.buttonL1.pressing() and shift == False:
+        Indexer.set_velocity(100, PERCENT)
+        Indexer.spin_for(FORWARD, 370, DEGREES, wait=False)
+        wait(0.25, SECONDS)
+        Indexer.stop()
+    elif controller_1.buttonL1.pressing() and shift == True:
+        Indexer.set_velocity(100, PERCENT)
         Indexer.spin(FORWARD)
     else:
         Indexer.stop()
