@@ -13,6 +13,8 @@ right_motor_b = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False)
 right_drive_smart = MotorGroup(right_motor_a, right_motor_b)
 drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 319.19, 295, 40, MM, 1)
 
+digital_out_a = DigitalOut(brain.three_wire_port.a)
+digital_out_b = DigitalOut(brain.three_wire_port.b)
 Flywheel_motor_a = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
 Flywheel_motor_b = Motor(Ports.PORT20, GearSetting.RATIO_6_1, True)
 Flywheel = MotorGroup(Flywheel_motor_a, Flywheel_motor_b)
@@ -22,7 +24,7 @@ controller_1 = Controller(PRIMARY)
 
 def curve(left, right):
     #ajustment factors
-    t=7
+    t=5
     #dead zone set to zero
     if left <= 5 and left >= -5:
         left = 0
@@ -115,6 +117,8 @@ latch = False
 toggle = False
 latch2 = False
 toggle2 = False
+latch3 = False
+toggle2 = False
 a_toggle = False
 shift = False
 
@@ -125,6 +129,8 @@ drivetrain.set_stopping(BRAKE)
 Flywheel.set_stopping(COAST)
 Indexer.set_max_torque(100, PERCENT)
 Indexer.set_position(0, DEGREES)
+digital_out_a.set(False)
+digital_out_b.set(False)
 
 def auton_run():
     #spin roller and back away
@@ -157,6 +163,13 @@ while True:
     else:
         shift = False
 
+    #endgame
+    if controller_1.buttonA.pressing() and shift == True:
+        digital_out_a.set(True)
+
+    if controller_1.buttonLeft.pressing() and shift == True:
+        digital_out_b.set(True)
+        
     #indexer
     if controller_1.buttonL1.pressing() and shift == False:
         Indexer.set_velocity(100, PERCENT)
@@ -183,10 +196,10 @@ while True:
     #flywheel
     if toggle and not toggle2: #slow
         Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(70, PERCENT)
+        Flywheel.set_velocity(75, PERCENT)
     elif toggle2 and not toggle: #fast
         Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(100, PERCENT)
+        Flywheel.set_velocity(85, PERCENT)
     else:
         Flywheel.stop()
 
