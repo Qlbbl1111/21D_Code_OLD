@@ -13,6 +13,7 @@ right_motor_b = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False)
 right_drive_smart = MotorGroup(right_motor_a, right_motor_b)
 drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 319.19, 295, 40, MM, 1)
 
+drivetrain_inertial = Inertial(Ports.PORT16)
 digital_out_a = DigitalOut(brain.three_wire_port.a)
 digital_out_b = DigitalOut(brain.three_wire_port.b)
 Flywheel_motor_a = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
@@ -21,6 +22,19 @@ Flywheel = MotorGroup(Flywheel_motor_a, Flywheel_motor_b)
 Intake = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
 Indexer = Motor(Ports.PORT21, GearSetting.RATIO_6_1, True)
 controller_1 = Controller(PRIMARY)
+
+
+def calibrate_drivetrain():
+    # Calibrate the Drivetrain Inertial
+    sleep(200, MSEC)
+    brain.screen.print("Calibrating")
+    brain.screen.next_row()
+    brain.screen.print("Inertial")
+    drivetrain_inertial.calibrate()
+    while drivetrain_inertial.is_calibrating():
+        sleep(25, MSEC)
+    brain.screen.clear_screen()
+    brain.screen.set_cursor(1, 1)
 
 def curve(left, right):
     #ajustment factors
@@ -49,6 +63,12 @@ def rc_auto_loop_function_controller_1():
     # update the motors based on the input values
     while True:
         if remote_control_code_enabled:
+            # stop the motors if the brain is calibrating
+            if drivetrain_inertial.is_calibrating():
+                left_drive_smart.stop()
+                right_drive_smart.stop()
+                while drivetrain_inertial.is_calibrating():
+                    sleep(25, MSEC)
             
             # calculate the drivetrain motor velocities from the controller joystick axies
             # left = axis3
@@ -124,27 +144,23 @@ shift = False
 
 #Set
 Intake.set_velocity(85, PERCENT)
+Intake.set_stopping(COAST)
 drivetrain.set_drive_velocity(100, PERCENT)
 drivetrain.set_stopping(BRAKE)
 Flywheel.set_stopping(COAST)
 Indexer.set_max_torque(100, PERCENT)
 Indexer.set_position(0, DEGREES)
-digital_out_a.set(False)
-digital_out_b.set(False)
+digital_out_a.set(True)
 
-def auton_run():
-    #spin roller and back away
-    Intake.set_velocity(100, PERCENT)
-    Intake.spin(REVERSE)
-    drivetrain.drive_for(FORWARD, 200, MM)
-    wait(0.5,SECONDS)
-    Intake.stop()
-    drivetrain.drive_for(REVERSE, 100, MM)
-    return
 
 def autonomous():
     controller_1.screen.print("Auton Start")
-    auton_run()
+    drivetrain.drive_for(FORWARD, 200, MM)
+    Intake.spin(REVERSE)
+    wait(1,SECONDS)
+    drivetrain.drive_for(REVERSE, 150, MM)
+    wait(1,SECONDS)
+    Intake.stop()
     return
 
 def driver_control():
@@ -165,11 +181,11 @@ while True:
 
     #endgame
     if controller_1.buttonA.pressing() and shift == True:
-        digital_out_a.set(True)
+        digital_out_a.set(False)
+    else:
+         digital_out_a.set(True)
 
-    if controller_1.buttonLeft.pressing() and shift == True:
-        digital_out_b.set(True)
-        
+
     #indexer
     if controller_1.buttonL1.pressing() and shift == False:
         Indexer.set_velocity(100, PERCENT)
@@ -196,14 +212,14 @@ while True:
     #flywheel
     if toggle and not toggle2: #slow
         Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(75, PERCENT)
+        Flywheel.set_velocity(70, PERCENT)
     elif toggle2 and not toggle: #fast
         Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(85, PERCENT)
+        Flywheel.set_velocity(80, PERCENT)
     else:
         Flywheel.stop()
 
-    if controller_1.buttonR2.pressing() and shift == True: #slow
+    if controller_1.buttonR2.pressing() and shift == False: #slow
         if not latch:
             #flip the toggle one time and set the latch
             toggle = not toggle
@@ -212,7 +228,7 @@ while True:
         #Once the BumperA is released then then release the latch too
         latch = False
 
-    if controller_1.buttonR2.pressing() and shift == False: #fast
+    if controller_1.buttonR2.pressing() and shift == True: #fast
         if not latch2:
             #flip the toggle one time and set the latch
             toggle2 = not toggle2
