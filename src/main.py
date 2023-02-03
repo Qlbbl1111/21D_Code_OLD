@@ -11,7 +11,7 @@ left_drive_smart = MotorGroup(left_motor_a, left_motor_b)
 right_motor_a = Motor(Ports.PORT17, GearSetting.RATIO_6_1, False)
 right_motor_b = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False)
 right_drive_smart = MotorGroup(right_motor_a, right_motor_b)
-drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 319.19, 295, 40, MM, 1)
+drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 12.56, 16, 16, INCHES, 60/36)
 
 drivetrain_inertial = Inertial(Ports.PORT16)
 digital_out_a = DigitalOut(brain.three_wire_port.a)
@@ -141,20 +141,22 @@ latch3 = False
 toggle2 = False
 a_toggle = False
 shift = False
+toggle4 = False
 
 #Set
 Intake.set_velocity(85, PERCENT)
 Intake.set_stopping(COAST)
-drivetrain.set_drive_velocity(100, PERCENT)
 drivetrain.set_stopping(BRAKE)
 Flywheel.set_stopping(COAST)
-Indexer.set_max_torque(100, PERCENT)
 Indexer.set_position(0, DEGREES)
 digital_out_a.set(True)
-
+flywheelajust = 70
 
 def autonomous():
     controller_1.screen.print("Auton Start")
+    #drivetrain.set_timeout(TIME, SECONDS)
+    #drivetrain.turn_to_heading(45.0, DEGREES)
+    drivetrain.stop()
     drivetrain.drive_for(FORWARD, 200, MM)
     Intake.spin(REVERSE)
     wait(1,SECONDS)
@@ -172,12 +174,39 @@ competition = Competition(driver_control, autonomous)
 
 #loop
 while True:
-    
+
     #shift
     if controller_1.buttonR1.pressing():
         shift = True
     else:
         shift = False
+
+
+    #change flywheel speed
+    if controller_1.buttonUp.pressing() and toggle4 == False:
+        if shift == True:
+            flywheelajust = flywheelajust + 5
+        else:
+            flywheelajust = flywheelajust + 1
+        toggle4 = True
+        controller_1.screen.next_row()
+        controller_1.screen.print(flywheelajust)
+        controller_1.screen.clear_row(1)
+        pass
+    elif controller_1.buttonDown.pressing()and toggle4 == False:
+        if shift == True:
+            flywheelajust = flywheelajust - 5
+        else:
+            flywheelajust = flywheelajust - 1
+        toggle4 = True
+        controller_1.screen.next_row()
+        controller_1.screen.print(flywheelajust)
+        controller_1.screen.clear_row(1)
+    else:
+        toggle4 = False
+
+    #---------
+
 
     #endgame
     if controller_1.buttonA.pressing() and shift == True:
@@ -189,7 +218,7 @@ while True:
     #indexer
     if controller_1.buttonL1.pressing() and shift == False:
         Indexer.set_velocity(100, PERCENT)
-        Indexer.spin_for(FORWARD, 370, DEGREES, wait=False)
+        Indexer.spin_for(FORWARD, 363, DEGREES, wait=False)
         wait(0.25, SECONDS)
         Indexer.stop()
     elif controller_1.buttonL1.pressing() and shift == True:
@@ -211,11 +240,11 @@ while True:
 
     #flywheel
     if toggle and not toggle2: #slow
+        Flywheel.set_velocity(flywheelajust, PERCENT)
         Flywheel.spin(FORWARD)
-        Flywheel.set_velocity(70, PERCENT)
     elif toggle2 and not toggle: #fast
-        Flywheel.spin(FORWARD)
         Flywheel.set_velocity(80, PERCENT)
+        Flywheel.spin(FORWARD)
     else:
         Flywheel.stop()
 
